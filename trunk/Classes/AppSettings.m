@@ -37,13 +37,6 @@
 // implementation methods for NSCoding protocol, which allows for objects to serialize/deserialize into a binary file
 - (void)encodeWithCoder:(NSCoder *)encoder {
 	//default serialization
-	[encoder encodeInteger:usageWarningCounter forKey:@"WarningCounter"];
-	[encoder encodeInteger:usageWarningInterval forKey:@"WarningInterval"];
-//	[encoder encodeDouble:requiredGPSAccuracyInMeters forKey:@"Accuracy"];
-//	[encoder encodeInteger:photoLargestSideInPixels forKey:@"PhotoResolution"];
-//	[encoder encodeFloat:jpegCompressionFactor forKey:@"JpegCompression"];
-//	[encoder encodeInteger:gpsSampleIntervalInSeconds forKey:@"GpsSampleInterval"];
-//	[encoder encodeInteger:gpsSampleCount forKey:@"GpsSampleCount"];
 	[encoder encodeObject:userName forKey:@"FullName"];
 	[encoder encodeObject:userEmailAddress forKey:@"Email"];
 	[encoder encodeObject:userTelephoneNumber forKey:@"PhoneNumber"];
@@ -52,13 +45,6 @@
 }
 - (id)initWithCoder:(NSCoder *)decoder {
 	//default de-serialization
-	usageWarningCounter = [decoder decodeIntegerForKey:@"WarningCounter"];
-	usageWarningInterval = [decoder decodeIntegerForKey:@"WarningInterval"];
-//	requiredGPSAccuracyInMeters = [decoder decodeDoubleForKey:@"Accuracy"];
-//	photoLargestSideInPixels = [decoder decodeIntegerForKey:@"PhotoResolution"];
-//	jpegCompressionFactor = [decoder decodeFloatForKey:@"JpegCompression"];
-//	gpsSampleIntervalInSeconds = [decoder decodeIntegerForKey:@"GpsSampleInterval"];
-//	gpsSampleCount = [decoder decodeIntegerForKey:@"GpsSampleCount"];
 	[self setUserName:[decoder decodeObjectForKey:@"FullName"]];
 	[self setUserEmailAddress:[decoder decodeObjectForKey:@"Email"]];
 	[self setUserTelephoneNumber:[decoder decodeObjectForKey:@"PhoneNumber"]];
