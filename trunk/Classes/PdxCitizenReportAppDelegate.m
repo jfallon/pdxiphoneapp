@@ -107,6 +107,9 @@
 - (void)applicationWillTerminate:(UIApplication *)application {
 	[self saveAppSettings];
 	[self saveUnsentReport];
+	// stop location services
+	LocationController *locationController = [LocationController sharedInstance];
+	[locationController stop];	
 }
 
 #pragma mark blacklist request and parsing
@@ -456,6 +459,7 @@
 		[prefs setObject:appSettings.usageWarningText forKey:@"WarningText"];
 		[prefs setInteger:appSettings.usageWarningInterval forKey:@"WarningInterval"];
 		[prefs setInteger:appSettings.usageWarningCounter forKey:@"WarningCounter"];
+		[prefs setObject:appSettings.lastNagForContactInfoDate forKey:@"LastNagForContactInfo"];
 	}
 }
 - (void)loadAppSettings {
@@ -471,7 +475,7 @@
 	}
 	appSettings.usageWarningInterval = [prefs integerForKey:@"WarningInterval"];
 	appSettings.usageWarningCounter = [prefs integerForKey:@"WarningCounter"];
-
+	appSettings.lastNagForContactInfoDate = (NSDate *)[prefs objectForKey:@"LastNagForContactInfo"];
 }
 
 

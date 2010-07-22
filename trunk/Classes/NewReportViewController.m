@@ -149,7 +149,8 @@
 	
 	// stuff to do if the app has been backgrounded for 24 hours or more
 	if (globalData.numberOfSecondsBackgrounded >= 86400)
-	{
+	{		
+		// display the usage warning and if needed switch to new report view
 		if (globalData.getActiveTabIndex == 0) {
 			[self displayUsageWarning];
 		}
@@ -629,10 +630,10 @@
 	if (globalData.deviceIsBlackListed == YES) {
 		NSString *blackListMessage = nil;
 		if ([[[globalData blackListReason] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] length] != 0) {
-			blackListMessage = [NSString stringWithFormat:@"This device has been blocked from submitting reports, the following reason was recorded: '%@'. If you feel this is in error, please contact someone for assistance.", DataRepository.sharedInstance.blackListReason];
+			blackListMessage = [NSString stringWithFormat:@"This device has been blocked from submitting reports, the following reason was recorded: '%@'. If you feel this is in error, please contact the City of Portland at 503-823-4000 for assistance.", DataRepository.sharedInstance.blackListReason];
 		}
 		else {
-			blackListMessage = @"This device has been blocked from submitting reports. If you feel this is in error, please contact someone for assistance.";
+			blackListMessage = @"This device has been blocked from submitting reports. If you feel this is in error, please contact the City of Portland at 503-823-4000 for assistance.";
 		}
 		UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Blocked Device"
 															message:blackListMessage 
@@ -710,30 +711,39 @@
 		}
 	}
 	
+	// determines if nag screen code will run based on the last time it ran
+	bool showNagScreen = YES;  // initally be pesimistic and assume the nag screen code will be run
 	AppSettings *settings = DataRepository.sharedInstance.appSettings;
-	if (contactInfoNagHasBeenDisplayedOnce == NO) {
-		if ((settings.usageWarningInterval != 0) && (settings.usageWarningCounter == 1)) {
-			bool showNagScreen = NO;
-			if (settings.userName.length == 0) {
+	if (settings.lastNagForContactInfoDate != nil) {
+		NSTimeInterval interval = [settings.lastNagForContactInfoDate timeIntervalSinceNow];
+		if (fabs(interval) < 86400) {
+			// the nag was shown less than 24 hours ago, don't run the nag screen code
+			showNagScreen = NO;
+		}
+	}
+
+	// this block determines if a nag screen will be shown based on existance of contact info
+	if (showNagScreen == YES) {
+		showNagScreen = NO; // reset flag and check for sufficient contact info
+		if (settings.userName.length == 0) {
+			showNagScreen = YES;
+		}
+		else {
+			if ((settings.userEmailAddress.length == 0) && (settings.userTelephoneNumber.length == 0)) {
 				showNagScreen = YES;
 			}
-			else {
-				if ((settings.userEmailAddress.length == 0) && (settings.userTelephoneNumber.length == 0)) {
-					showNagScreen = YES;
-				}
-			}
-			if (showNagScreen == YES) {
-				UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Contact Info?"
-																	message:@"Please consider filling out the contact information found on the 'Settings' tab of this app.  While contact information is optional, it helps us respond to reports more effectively. Would you like to fill out your contact information now?" 
-																   delegate:self 
-														  cancelButtonTitle:nil
-														  otherButtonTitles:@"Yes", @"No", nil];
-				[alertView setTag:12];
-				[alertView show];	
-				[alertView release];
-				contactInfoNagHasBeenDisplayedOnce = YES;
-				return;		
-			}
+		}
+		if (showNagScreen == YES) {
+			settings.lastNagForContactInfoDate = [NSDate date];
+			UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Contact Info?"
+																message:@"Please consider filling out the contact information found on the 'Settings' tab of this app.  While contact information is optional, it helps us respond to reports more effectively. Would you like to fill out your contact information now?" 
+															   delegate:self 
+													  cancelButtonTitle:nil
+													  otherButtonTitles:@"Yes", @"No", nil];
+			[alertView setTag:12];
+			[alertView show];	
+			[alertView release];
+			return;		
 		}
 	}
 	
@@ -793,14 +803,14 @@
 				[controller release];
 				
 				[[[[[self view] superview] superview] superview] addSubview:self.busyViewController.view];
-				NSString *labelText = [NSString stringWithFormat:@"Please wait, currently uploading your report..."];
+				NSString *labelText = [NSString stringWithFormat:@"Please wait, currently uploading your report to the City of Portland..."];
 				[[self.busyViewController activityIndicatorLabel] setText:labelText];
 				[self.busyViewController startProgressIndicator];
 			}
 			
 			if ([self cityWebServerIsReachable]==NO) {
 				UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Unable To Send Report"
-																	message:@"The webserver is not currently reachable from this device. Please try sending your report later." 
+																	message:@"The City of Portland's webserver is not currently reachable from this device. Please try sending your report later." 
 																   delegate:self 
 														  cancelButtonTitle:@"OK" 
 														  otherButtonTitles:nil];
@@ -841,7 +851,7 @@
 	else {
 		UIAlertView *alertView = [[UIAlertView alloc] 
 								  initWithTitle:@"Send Report Failed"
-								  message:@"The report type you originally selected for this unsent report is no longer available.  Please choose a different report type and submit again." 
+								  message:@"The report type you originally selected for this unsent report is no longer available in Citizen Reports.  Please choose a different report type and submit again." 
 								  delegate:self 
 								  cancelButtonTitle:@"OK"
 								  otherButtonTitles:nil];
@@ -1158,7 +1168,7 @@
 		if (reportSubmitalOK == NO) {
 			UIAlertView *alertView = [[UIAlertView alloc] 
 									  initWithTitle:@"Send Report Failed"
-									  message:@"An error with the webserver was encountered while sending your report. Please try sending it again later." 
+									  message:@"An error with the City of Portland's website was encountered while sending your report. Please try sending it again later." 
 									  delegate:self 
 									  cancelButtonTitle:@"OK"
 									  otherButtonTitles:nil];
@@ -1191,7 +1201,7 @@
 				if (sendReportBackgroundRetryCount == 1) {
 					if ([self cityWebServerIsReachable]==NO) {
 						UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Unable To Send Report"
-																			message:@"The webserver is not currently reachable from this device. Please try sending your report again later." 
+																			message:@"The City of Portland's webserver is not currently reachable from this device. Please try sending your report again later." 
 																		   delegate:self 
 																  cancelButtonTitle:@"OK" 
 																  otherButtonTitles:nil];

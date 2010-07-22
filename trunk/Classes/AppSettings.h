@@ -9,7 +9,7 @@
 #import <Foundation/Foundation.h>
 
 
-@interface AppSettings : NSObject <NSCoding> {
+@interface AppSettings : NSObject {
 	NSInteger	usageWarningCounter;
 	NSInteger	usageWarningInterval;
 	double		requiredGPSAccuracyInMeters;
@@ -23,6 +23,7 @@
 	bool		userSettingsApplied;
 	NSString	*helpPageAddress;
 	NSString	*usageWarningText;
+	NSDate		*lastNagForContactInfoDate;
 }
 
 @property(nonatomic)		NSInteger usageWarningCounter;
@@ -38,9 +39,6 @@
 @property(nonatomic,copy)	NSString *userTelephoneNumber;
 @property(nonatomic,copy)	NSString *helpPageAddress;
 @property(nonatomic,copy)	NSString *usageWarningText;
-
-// NSCoding protocol for object serialization/deserialization
-- (void)encodeWithCoder:(NSCoder *)encoder;
-- (id)initWithCoder:(NSCoder *)encoder;
+@property(nonatomic,copy)	NSDate *lastNagForContactInfoDate;
 
 @end

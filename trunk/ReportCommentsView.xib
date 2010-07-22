@@ -68,7 +68,7 @@
 						<string key="targetRuntimeIdentifier">IBCocoaTouchFramework</string>
 						<object class="NSCustomResource" key="IBUIImage">
 							<string key="NSClassName">NSImage</string>
-							<string key="NSResourceName">large comments area frame.png</string>
+							<string key="NSResourceName">medium comments area frame.png</string>
 						</object>
 					</object>
 					<object class="IBUIButton" id="182874612">
@@ -613,14 +613,14 @@
 			<object class="NSArray" key="dict.sortedKeys">
 				<bool key="EncodedWithXMLCoder">YES</bool>
 				<string>background.png</string>
-				<string>large comments area frame.png</string>
+				<string>medium comments area frame.png</string>
 				<string>medium_button_down_new.png</string>
 				<string>medium_button_up_new.png</string>
 			</object>
 			<object class="NSMutableArray" key="dict.values">
 				<bool key="EncodedWithXMLCoder">YES</bool>
 				<string>{320, 460}</string>
-				<string>{283, 400}</string>
+				<string>{290, 168}</string>
 				<string>{200, 40}</string>
 				<string>{200, 40}</string>
 			</object>

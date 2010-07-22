@@ -24,6 +24,7 @@
 @synthesize userTelephoneNumber;
 @synthesize helpPageAddress;
 @synthesize usageWarningText;
+@synthesize lastNagForContactInfoDate;
 
 - (void)dealloc {
 	[userName release]; userName = nil;
@@ -31,26 +32,8 @@
 	[userTelephoneNumber release]; userTelephoneNumber = nil;
 	[helpPageAddress release]; helpPageAddress = nil;
 	[usageWarningText release]; usageWarningText = nil;
+	[lastNagForContactInfoDate release]; lastNagForContactInfoDate = nil;
 	[super dealloc];
-}
-
-// implementation methods for NSCoding protocol, which allows for objects to serialize/deserialize into a binary file
-- (void)encodeWithCoder:(NSCoder *)encoder {
-	//default serialization
-	[encoder encodeObject:userName forKey:@"FullName"];
-	[encoder encodeObject:userEmailAddress forKey:@"Email"];
-	[encoder encodeObject:userTelephoneNumber forKey:@"PhoneNumber"];
-	[encoder encodeObject:helpPageAddress forKey:@"HelpPageURL"];
-	[encoder encodeObject:usageWarningText forKey:@"WarningText"];
-}
-- (id)initWithCoder:(NSCoder *)decoder {
-	//default de-serialization
-	[self setUserName:[decoder decodeObjectForKey:@"FullName"]];
-	[self setUserEmailAddress:[decoder decodeObjectForKey:@"Email"]];
-	[self setUserTelephoneNumber:[decoder decodeObjectForKey:@"PhoneNumber"]];
-	[self setHelpPageAddress:[decoder decodeObjectForKey:@"HelpPageURL"]];
-	[self setUsageWarningText:[decoder decodeObjectForKey:@"WarningText"]];
-	return self;
 }
 
 @end
