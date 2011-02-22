@@ -12,6 +12,7 @@
 #import "AppSettings.h"
 #import "Reachability.h"
 #import "PDXBoundary.h"
+#import "CRMReportDefinition.h"
 
 NSString * const NOTIF_AppComingToForeground = @"AppComingToForeground";
 
@@ -19,9 +20,15 @@ NSString * const NOTIF_AppComingToForeground = @"AppComingToForeground";
 
 static DataRepository *sharedInstance = nil;
 
+@synthesize agencyName;
+@synthesize agencyPhoneNumber;
+@synthesize agencyEmailAddress;
+@synthesize appName;
 @synthesize crmReportDefinitionArray;
 @synthesize userReportArray;
-@synthesize statusCodeDictionary;
+@synthesize statusCodeKeys;
+@synthesize statusCodeValues;
+@synthesize statusCodeIsToggledOn;
 @synthesize verifyValue;
 @synthesize appSettings;
 @synthesize appSettingsFilePath;
@@ -84,13 +91,23 @@ static DataRepository *sharedInstance = nil;
 	self = [super init];
     if (self != nil) {
 		
+        agencyName = @"Agency Name";
+        [agencyName retain];
+        agencyPhoneNumber = @"444-444-4444";
+        [agencyPhoneNumber retain];
+        agencyEmailAddress = @"info@agencyname.com";
+        [agencyEmailAddress retain];
+        appName = @"App Name";
+        [appName retain];
+        
 		UIDevice *device = [UIDevice currentDevice];
 		deviceID = [[device uniqueIdentifier] retain];
 		deviceManufacturer = @"Apple";
 		deviceModel = [[device model] retain];
 		deviceOsName = [[device systemName] retain];
 		deviceOsVersion = [[device systemVersion] retain];
-		
+		//NSLog(deviceID);
+        
 		// location dependent - current values represents a rough envelope around Portland, OR
 		latitudeSouth = 45.45380;
 		latitudeNorth = 45.64952;
@@ -103,7 +120,7 @@ static DataRepository *sharedInstance = nil;
 		//latitudeCenter = (latitudeSouth + ((latitudeNorth - latitudeSouth) / 2));
 		//longitudeCenter = (longitudeWest - ((longitudeWest - longitudeEast) / 2));
 
-		boundary = [[PDXBoundary alloc]init]; 
+		boundary = [[PDXBoundary alloc]init];
 		
 		reachabilityHost = [[Reachability reachabilityWithHostName:@"www.apple.com"] retain];
 		
@@ -153,7 +170,7 @@ static DataRepository *sharedInstance = nil;
 		// site dependant, used as password for POST operations to CRM
 		verifyValue = @"some value goes here";
 		[verifyValue retain];
-				
+        
 		// default values for URLs if for some reason they aren't available dynamically
 		urlPrefix = @"http://some.website.com";
 		[urlPrefix retain];	
@@ -177,17 +194,17 @@ static DataRepository *sharedInstance = nil;
 		[getItemDetailUrlSuffix retain];
 		getItemPhotoUrlSuffix = @"/some/app/domain/deviceimage.script";
 		[getItemPhotoUrlSuffix retain];
-		getItemMapUrlSuffix = @"/some/app/domain/devicemap.v";
+		getItemMapUrlSuffix = @"/some/app/domain/devicemap.script";
 		[getItemMapUrlSuffix retain];
 		
 		crmReportDefinitionArray = [[NSMutableArray array] retain];
 		userReportArray = [[NSMutableArray array] retain];
 		
 		// default status code equivalents in Portland's CRM
-		NSArray *keys = [NSArray arrayWithObjects:@"O", @"W", @"R", @"C", @"A", nil];
-		NSArray *objects = [NSArray arrayWithObjects:@"Open", @"Work in Progess", @"Referred", @"Closed", @"Archived", nil];
-		statusCodeDictionary = [[NSDictionary dictionaryWithObjects:objects forKeys:keys] retain];
-		
+		statusCodeKeys = [[NSArray arrayWithObjects:@"O", @"W", @"R", @"C", @"A", nil] retain];
+		statusCodeValues = [[NSArray arrayWithObjects:@"Open", @"Work in Progess", @"Referred", @"Closed", @"Archived", nil] retain];
+        statusCodeIsToggledOn = [[NSMutableArray arrayWithObjects:[NSNumber numberWithBool:YES],[NSNumber numberWithBool:YES],[NSNumber numberWithBool:YES],[NSNumber numberWithBool:YES],[NSNumber numberWithBool:YES], nil] retain];
+ 
     }
     return self;
 }
@@ -257,5 +274,77 @@ static DataRepository *sharedInstance = nil;
 	}
 }
 
+- (NSString *) getReportStatusFilterString {
+    
+    NSString *returnString = @"";
+    for (int i = 0; i < [statusCodeIsToggledOn count]; i++)
+    {
+        NSNumber *thisValue = [statusCodeIsToggledOn objectAtIndex:i];
+        if ([thisValue isEqualToNumber:[NSNumber numberWithBool:YES]])
+        {
+            if (returnString.length > 0)
+                returnString = [returnString stringByAppendingString:@","];
+            NSString *aKey = [statusCodeKeys objectAtIndex:i];
+            returnString = [returnString stringByAppendingFormat:@"%@",aKey];
+        }
+    }
+    return returnString;
+}
+
+- (NSString *) getCategoryFilterString {
+
+    NSString *returnString = @"";
+    for (int i = 0; i < [crmReportDefinitionArray count]; i++)
+    {
+        CRMReportDefinition *reportDefinition = [crmReportDefinitionArray objectAtIndex:i];
+        if (reportDefinition.visibleInMyReports == YES)
+        {
+            if (returnString.length > 0) 
+                returnString = [returnString stringByAppendingString:@","];
+             returnString = [returnString stringByAppendingFormat:@"%d",reportDefinition.category];
+        }
+    }
+    return returnString;
+}
+
+- (bool) categoryIsVisible:(NSString *)name {
+    
+    if (name.length > 0) {
+        for (int i = 0; i < [crmReportDefinitionArray count]; i++)
+        {
+            CRMReportDefinition *reportDefinition = [crmReportDefinitionArray objectAtIndex:i];
+            if ([reportDefinition.instanceName hasPrefix:@"*"] == YES) {
+                NSString *fixedInstanceName = [[reportDefinition instanceName] substringWithRange:NSMakeRange(1,[[reportDefinition instanceName] length] - 1)];
+                if ([fixedInstanceName isEqualToString:name] == YES) {
+                    return reportDefinition.visibleInMyReports;
+                }
+            }
+            else {
+                if ([reportDefinition.instanceName isEqualToString:name] == YES) {
+                    return reportDefinition.visibleInMyReports;
+                }
+            }
+        }
+    }
+    return NO;
+}
+
+- (bool)emailAddressIsValid:(NSString *)candidate {
+    
+    // regex adapted from: http://www.regular-expressions.info/email.html
+    // top level domains updated from: http://en.wikipedia.org/wiki/List_of_Internet_top-level_domains
+    // behavior: any 2 character top level domain will go through, anything longer than 2 must have an exact match in the regex below
+    // as currently written, this regex is case sensitive so you should convert string to be compared to lower case.
+    NSString *regEx = @"[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+(?:[a-z]{2}|aero|asia|biz|cat|com|coop|edu|gov|info|int|jobs|mil|mobi|museum|name|net|org|pro|tel|travel|xxx)\\b";
+    NSPredicate *emailTest = [NSPredicate predicateWithFormat:@"SELF MATCHES %@", regEx];
+    return [emailTest evaluateWithObject:[candidate lowercaseString]];
+}
+
+- (bool)stringIsUnsignedInt:(NSString *)candidate {
+    
+    NSString *regEx = @"^\\d+$";
+    NSPredicate *uIntTest = [NSPredicate predicateWithFormat:@"SELF MATCHES %@", regEx];
+    return [uIntTest evaluateWithObject:[candidate lowercaseString]];
+}
 
 @end

@@ -16,9 +16,16 @@
 
 @interface DataRepository : NSObject {
 	
+    NSString *agencyName;
+    NSString *agencyPhoneNumber;
+    NSString *agencyEmailAddress;
+    NSString *appName;
+    
 	NSMutableArray *crmReportDefinitionArray;
 	NSMutableArray *userReportArray;
-	NSDictionary *statusCodeDictionary;
+    NSArray *statusCodeKeys;
+    NSArray *statusCodeValues;
+    NSMutableArray *statusCodeIsToggledOn;
 	CLLocation *proposedLocation;		
 	Reachability *reachabilityInternet;
 	Reachability *reachabilityHost;
@@ -52,7 +59,7 @@
 	NSString *pingServerUrlSuffix;
 	NSString *getItemPhotoUrlSuffix;
 	NSString *getItemMapUrlSuffix;
-	
+	    
 	NSString *getItemDetailUrlSuffix;
 	NSString *getItemDetailUrlParameters;
 
@@ -82,6 +89,11 @@ extern NSString * const NOTIF_AppComingToForeground;
 
 + (DataRepository *)sharedInstance;
 
+@property (nonatomic,readonly)  NSString *agencyName;
+@property (nonatomic,readonly)  NSString *agencyPhoneNumber;
+@property (nonatomic,readonly)  NSString *agencyEmailAddress;
+@property (nonatomic,readonly)  NSString *appName;
+
 @property (nonatomic, copy)		NSString *urlPrefix;
 @property (nonatomic, readonly) NSString *getServerSettingsUrlSuffix;
 @property (nonatomic, readonly) NSString *getAppSettingsUrlSuffix;
@@ -100,7 +112,9 @@ extern NSString * const NOTIF_AppComingToForeground;
 
 @property (nonatomic,retain)	NSMutableArray *crmReportDefinitionArray;
 @property (nonatomic,retain)	NSMutableArray *userReportArray;
-@property (nonatomic,retain)	NSDictionary *statusCodeDictionary;
+@property (nonatomic,retain)    NSArray *statusCodeKeys;
+@property (nonatomic,retain)    NSArray *statusCodeValues;
+@property (nonatomic,retain)    NSMutableArray *statusCodeIsToggledOn;
 @property (nonatomic,readonly)	NSString *verifyValue;
 @property (nonatomic,retain)	AppSettings *appSettings;
 @property (nonatomic,copy)		NSString *appSettingsFilePath;
@@ -148,5 +162,10 @@ extern NSString * const NOTIF_AppComingToForeground;
 - (void)internetReachabilityHasChanged:(NSNotification *)notice;
 - (void)hostReachabilityHasChanged:(NSNotification *)notice;
 - (bool)stringContains:(NSString *)stringToSearch subString:(NSString *)stringToFind;
+- (NSString *)getReportStatusFilterString;
+- (NSString *)getCategoryFilterString;
+- (bool)categoryIsVisible:(NSString *)name;
+- (bool)emailAddressIsValid:(NSString *)candidate;
+- (bool)stringIsUnsignedInt:(NSString *)candidate;
 
 @end

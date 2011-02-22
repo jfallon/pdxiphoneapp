@@ -16,6 +16,8 @@
 @synthesize imageRequired;
 @synthesize addressRequired;
 @synthesize commentsRequired;
+@synthesize contactInfoRequired;
+@synthesize visibleInMyReports;
 @synthesize instanceName;
 @synthesize imageFieldName;
 @synthesize commentsFieldName;

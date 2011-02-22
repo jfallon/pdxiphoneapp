@@ -73,13 +73,13 @@
 }
 
 - (id)initWithImage:(UIImage *)imageToDisplay fromNibName:(NSString *)nibNameOrNil fromBundle:(NSBundle *)nibBundleOrNil {
-	if (self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil]) {
+	if ((self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil])) {
 		self.image = imageToDisplay;
 	}
 	return self;
 }
 - (id)initWithURL:(NSURL *)urlToLoad fromNibName:(NSString *)nibNameOrNil fromBundle:(NSBundle *)nibBundleOrNil {
-	if (self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil]) {
+	if ((self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil])) {
 		self.URL = urlToLoad;
 	}
 	return self;

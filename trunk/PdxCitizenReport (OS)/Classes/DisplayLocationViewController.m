@@ -15,7 +15,7 @@
 
 - (id)initWithRegion:(MKCoordinateRegion)region fromNibName:(NSString *)nibNameOrNil fromBundle:(NSBundle *)nibBundleOrNil {
 
-	if (self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil]) {
+	if ((self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil])) {
 		_region = region;
 	}
 	return self;
@@ -24,7 +24,7 @@
 
 - (id)initWithRegion:(MKCoordinateRegion)region andPinLocation:(CLLocationCoordinate2D)coordinate fromNibName:(NSString *)nibNameOrNil fromBundle:(NSBundle *)nibBundleOrNil {
 
-	if (self = [self initWithRegion:region fromNibName:nibNameOrNil fromBundle:nibBundleOrNil]) {
+	if ((self = [self initWithRegion:region fromNibName:nibNameOrNil fromBundle:nibBundleOrNil])) {
 		_location = coordinate;
 	}
 	return self;

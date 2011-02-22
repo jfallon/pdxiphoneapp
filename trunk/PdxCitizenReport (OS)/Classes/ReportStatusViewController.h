@@ -7,32 +7,40 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "EGORefreshTableHeaderView.h"
+
 @class ASIHTTPRequest;
 @class ReportStatusDetailViewController;
 
-@interface ReportStatusViewController : UIViewController <UITableViewDelegate, UITableViewDataSource, UIAlertViewDelegate> {
+@interface ReportStatusViewController : UIViewController <UITableViewDelegate, UITableViewDataSource, UIAlertViewDelegate,EGORefreshTableHeaderDelegate> {
 
-	IBOutlet UIBarButtonItem *refreshButton;
+	IBOutlet UIBarButtonItem *filterButton;
 	IBOutlet UITableView *reportsTable;
 	IBOutlet UIActivityIndicatorView *activityIndicator;
 	IBOutlet UILabel *activityLabel;
 	
+    EGORefreshTableHeaderView *refreshHeaderView;
+    bool dataIsReloading;
+    
 	NSInteger populateUserReportArrayRetryCount;
 	NSMutableDictionary *tableData;
 	NSArray *tableDataKeys;
 }
 
-@property (nonatomic,retain) IBOutlet UIBarButtonItem *refreshButton;
+@property (nonatomic,retain) IBOutlet UIBarButtonItem *filterButton;
 @property (nonatomic,retain) IBOutlet UITableView *reportsTable;
 @property (nonatomic,retain) IBOutlet UIActivityIndicatorView *activityIndicator;
 @property (nonatomic,retain) IBOutlet UILabel *activityLabel;
 @property (nonatomic,retain) NSMutableDictionary *tableData;
 @property (nonatomic,retain) NSArray *tableDataKeys;
 
-- (IBAction)refreshUserReportsFromButtonClick:(id)sender;
+- (IBAction)filterReportsFromButtonClick:(id)sender;
 
 - (void)showActivityIndicators;
 - (void)hideActivityIndicators;
+
+- (void)reloadTableViewDataSource;
+- (void)doneLoadingTableViewData;
 
 - (void)populateUserReportArray;
 - (bool)parseUserReportsXml:(NSString *)xmlData;

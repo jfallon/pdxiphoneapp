@@ -20,7 +20,7 @@
 
 //The designated initializer.  Override if you create the controller programmatically and want to perform customization that is not appropriate for viewDidLoad.
 - (id)initWithURL:(NSURL *)initialURL andAllowPageLinks:(bool)allowLinks fromNibName:(NSString *)nibNameOrNil fromBundle:(NSBundle *)nibBundleOrNil {
-    if (self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil]) {
+    if ((self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil])) {
         self.url = initialURL;
 		enablePageLinks = allowLinks;
     }

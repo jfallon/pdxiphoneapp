@@ -22,6 +22,8 @@
 	bool imageRequired;
 	bool addressRequired;
 	bool commentsRequired;
+	bool contactInfoRequired;
+    bool visibleInMyReports;
 }
 
 @property NSInteger number;
@@ -29,6 +31,8 @@
 @property bool imageRequired;
 @property bool addressRequired;
 @property bool commentsRequired;
+@property bool contactInfoRequired;
+@property bool visibleInMyReports;
 @property(nonatomic,copy) NSString *instanceName;
 @property(nonatomic,copy) NSString *imageFieldName;
 @property(nonatomic,copy) NSString *commentsFieldName;

@@ -24,6 +24,8 @@
 	NSString	*helpPageAddress;
 	NSString	*usageWarningText;
 	NSDate		*lastNagForContactInfoDate;
+    NSString    *reportStatusFilterString;
+    NSString    *categoryFilterString;
 }
 
 @property(nonatomic)		NSInteger usageWarningCounter;
@@ -40,5 +42,7 @@
 @property(nonatomic,copy)	NSString *helpPageAddress;
 @property(nonatomic,copy)	NSString *usageWarningText;
 @property(nonatomic,copy)	NSDate *lastNagForContactInfoDate;
+@property(nonatomic,copy)   NSString *reportStatusFilterString;
+@property(nonatomic,copy)   NSString *categoryFilterString;
 
 @end

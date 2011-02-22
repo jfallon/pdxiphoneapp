@@ -99,7 +99,7 @@
 	} else {
 		
 		UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Invalid Location"
-															message:@"Report locations must be within the City of Portland." 
+															message:[NSString stringWithFormat:@"Report locations must be within the %@.", DataRepository.sharedInstance.agencyName] 
 														   delegate:self 
 												  cancelButtonTitle:@"OK" 
 												  otherButtonTitles:nil];

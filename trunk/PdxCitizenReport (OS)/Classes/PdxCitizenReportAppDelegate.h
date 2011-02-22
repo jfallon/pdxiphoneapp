@@ -10,7 +10,7 @@
 @class ASIHTTPRequest;
 
 
-@interface PdxCitizenReportAppDelegate : NSObject <UIApplicationDelegate, UITabBarControllerDelegate> {
+@interface PdxCitizenReportAppDelegate : NSObject <UIApplicationDelegate, UITabBarControllerDelegate,UIAlertViewDelegate> {
     
 	UIWindow *window;
     UITabBarController *tabBarController;
@@ -20,6 +20,7 @@
 	NSInteger populateDeviceBlackListInfoRetryCount;
 	NSInteger populateTrackItInstanceArrayRetryCount;
 	NSInteger populateIPhoneAppSettingsRetryCount;	
+
 }
 
 @property(nonatomic,retain) IBOutlet UIWindow *window;
@@ -28,6 +29,13 @@
 
 - (void)requestFinished:(ASIHTTPRequest *)request;
 - (void)requestFailed:(ASIHTTPRequest *)request;
+
+// UIAlertViewDelegate protocol
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex;
+
+// UITabBarControllerDelegate
+- (void)tabBarController:(UITabBarController *)tabbarController didSelectViewController:(UIViewController *)viewController;
+- (BOOL)tabBarController:(UITabBarController *)tabbarController shouldSelectViewController:(UIViewController *)viewController;
 
 - (void)populateReportTypeArray:(bool)resetRetryCounter;
 - (void)retryPopulateReportTypeArray;

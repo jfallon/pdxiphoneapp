@@ -7,6 +7,7 @@
 //
 
 #import "ReportStatusViewController.h"
+#import "ReportFilterViewController.h"
 #import "AppBusyViewController.h"
 #import "AppProgressViewController.h"
 #import "Report.h"
@@ -17,19 +18,20 @@
 #import "DDXML.h"
 #import "ReportCustomCell.h"
 #import "ReportStatusDetailViewController.h"
+#import "AppSettings.h"
 
 @implementation ReportStatusViewController
 
-@synthesize refreshButton;
+@synthesize filterButton;
 @synthesize reportsTable;
 @synthesize activityIndicator;
 @synthesize activityLabel;
 @synthesize tableData;
 @synthesize tableDataKeys;
 
-
 - (void)dealloc {
-	[refreshButton release]; refreshButton = nil;
+    [refreshHeaderView release]; refreshHeaderView = nil;
+	[filterButton release]; filterButton = nil;
 	[reportsTable release]; reportsTable = nil;
 	[activityIndicator release]; activityIndicator = nil;
 	[activityLabel release]; activityLabel = nil;
@@ -38,19 +40,23 @@
     [super dealloc];
 }
 
-- (void)showActivityIndicators {
-	activityLabel.hidden = NO;
-	activityIndicator.hidden = NO;
-	reportsTable.hidden = YES;
-	[refreshButton setEnabled:NO];
-	[activityIndicator startAnimating];
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+	if (refreshHeaderView == nil) {
+        
+		EGORefreshTableHeaderView *view = [[EGORefreshTableHeaderView alloc] initWithFrame:CGRectMake(0.0f, 0.0f - self.reportsTable.bounds.size.height, self.view.frame.size.width, self.reportsTable.bounds.size.height)];
+		view.delegate = self;
+		[self.reportsTable addSubview:view];
+		refreshHeaderView = view;
+		[view release];
+        
+	}
+	//  update the last update date
+	[refreshHeaderView refreshLastUpdatedDate];
 }
-- (void)hideActivityIndicators {
-	[activityIndicator stopAnimating];	
-	[refreshButton setEnabled:YES];
-	reportsTable.hidden = NO;
-	activityLabel.hidden = YES;
-	activityIndicator.hidden = YES;
+- (void)viewDidUnload {
+	[refreshHeaderView release]; refreshHeaderView = nil;
 }
 
 - (void)viewDidAppear:(BOOL)animated {	
@@ -63,19 +69,40 @@
 	}
 }
 
+- (void)showActivityIndicators {
+	activityLabel.hidden = NO;
+	activityIndicator.hidden = NO;
+    if (dataIsReloading == NO)
+        reportsTable.hidden = YES;
+	[filterButton setEnabled:NO];
+	[activityIndicator startAnimating];
+}
+- (void)hideActivityIndicators {
+	[activityIndicator stopAnimating];	
+	[filterButton setEnabled:YES];
+    if (dataIsReloading == NO)
+        reportsTable.hidden = NO;
+	activityLabel.hidden = YES;
+	activityIndicator.hidden = YES;
+}
+
 - (void)didReceiveMemoryWarning {
 	// Releases the view if it doesn't have a superview.
     [super didReceiveMemoryWarning];
-	
-	// Release any cached data, images, etc that aren't in use.
 }
 
-- (IBAction)refreshUserReportsFromButtonClick:(id)sender { 
-	[self populateUserReportArray];
+- (IBAction)filterReportsFromButtonClick:(id)sender { 
+
+    // replace the back button for this item so that it will display a specific text string instead of this view's name which is too long
+	//self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Back" style: UIBarButtonItemStyleBordered target:nil action:nil];
+    
+    ReportFilterViewController *controller = [[ReportFilterViewController alloc] initWithNibName:@"ReportFilterView" bundle:nil];
+    [controller setTitle:@"Visibility"];
+    [self.navigationController pushViewController:controller animated:YES];
+    [controller release];
 }
 
 - (void)populateUserReportArray {
-	
 	if ([[DataRepository sharedInstance] internetIsReachableRightNow] == NO || DataRepository.sharedInstance.connectionRequiredForInternet == YES) {
 	
 		UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Network Unavailable"
@@ -89,8 +116,11 @@
 		return;
 	}
 	
-	[self showActivityIndicators];
+    if (dataIsReloading == NO)
+        [self showActivityIndicators];
 	
+    AppSettings *appSettings = [[DataRepository sharedInstance] appSettings];
+    
 	NSMutableArray *userReportArray = [[DataRepository sharedInstance] userReportArray];
 	[userReportArray removeAllObjects];
 	[reportsTable reloadData];
@@ -100,6 +130,10 @@
 	ASIFormDataRequest *request = [ASIFormDataRequest requestWithURL:url];
 	[request setPostValue:[[DataRepository sharedInstance]verifyValue] forKey:@"verify"];
 	[request setPostValue:[[DataRepository sharedInstance]deviceID] forKey:@"device_id"];
+    if (appSettings.reportStatusFilterString.length > 0)
+        [request setPostValue:appSettings.reportStatusFilterString forKey:@"status"];
+    if (appSettings.categoryFilterString.length > 0)
+        [request setPostValue:appSettings.categoryFilterString forKey:@"category_id"];
 	[request setUserInfo:[NSDictionary dictionaryWithObject:@"get_user_reports" forKey:@"request_type"]];
 	[request setTimeOutSeconds:30];
 	[request setDelegate:self];
@@ -179,7 +213,9 @@
 			if (reportAttribute != nil) {
 				[userReport setCustomStatus:[reportAttribute stringValue]];
 			}
-			[userReportArray addObject:userReport];
+            // line below can be used to implement fully client side hiding reports
+            //if ([[DataRepository sharedInstance] categoryIsVisible:userReport.reportType]==YES)
+            [userReportArray addObject:userReport];
 			[userReport release];
 		}
 		[xmlDocument release];
@@ -195,7 +231,7 @@
 	
 	NSString *requestType = [[request userInfo] objectForKey:@"request_type"];
 	if ([requestType isEqualToString:@"get_user_reports"]) {
-		[self hideActivityIndicators];
+        [self hideActivityIndicators];
 		DataRepository.sharedInstance.myReportsShouldBeRefreshed = NO;
 		NSString *requestString = [request responseString];
 		//NSLog(@"User reports HTTP request successful");
@@ -205,6 +241,7 @@
 			[reportsTable reloadData];
 			return;
 		}
+        [self doneLoadingTableViewData];
 	}	
 }
 
@@ -224,6 +261,7 @@
 		}
 		else {
 			//NSLog(@"Giving up after %ld attempts",(long)populateUserReportArrayRetryCount);
+            [self doneLoadingTableViewData];
 		}
 	}	
 
@@ -286,10 +324,21 @@
 			if (report != nil) {
 				NSString *reportStatus = nil;
 				if (report.customStatus.length == 0) {
-					reportStatus = [[[DataRepository sharedInstance] statusCodeDictionary] objectForKey:report.status];
-					if (reportStatus.length == 0) {
-						reportStatus = @"Unknown";
-					}
+                    if (report.status.length == 0) {
+                        reportStatus = @"Unknown";
+                    }
+                    else
+                    {
+                        NSUInteger statusIndex = [[[DataRepository sharedInstance] statusCodeKeys ] indexOfObject:report.status];
+                        if (statusIndex == NSNotFound)
+                        {
+                            reportStatus = @"Unknown";
+                        }
+                        else
+                        {
+                            reportStatus = [[[DataRepository sharedInstance] statusCodeValues] objectAtIndex:statusIndex];
+                        }
+                    }
 				}
 				else {
 					reportStatus = report.customStatus;
@@ -345,6 +394,59 @@
 	}
 }
 
+#pragma mark -
+#pragma mark Data Source Loading / Reloading Methods
+
+- (void)reloadTableViewDataSource{
+    // call code to repopulate table
+    dataIsReloading = YES;
+    [self populateUserReportArray];
+}
+
+- (void)doneLoadingTableViewData{
+	//  model should call this when its done loading
+	dataIsReloading = NO;
+	[refreshHeaderView egoRefreshScrollViewDataSourceDidFinishedLoading:self.reportsTable];
+}
+
+
+#pragma mark -
+#pragma mark UIScrollViewDelegate Methods
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView{	
+    
+	[refreshHeaderView egoRefreshScrollViewDidScroll:scrollView];
+    
+}
+
+- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate{
+    
+	[refreshHeaderView egoRefreshScrollViewDidEndDragging:scrollView];
+    
+}
+
+
+#pragma mark -
+#pragma mark EGORefreshTableHeaderDelegate Methods
+
+- (void)egoRefreshTableHeaderDidTriggerRefresh:(EGORefreshTableHeaderView*)view{
+    
+	[self reloadTableViewDataSource];
+	[self performSelector:@selector(doneLoadingTableViewData) withObject:nil afterDelay:3.0];
+    
+}
+
+- (BOOL)egoRefreshTableHeaderDataSourceIsLoading:(EGORefreshTableHeaderView*)view{
+    
+	return dataIsReloading; // should return if data source model is reloading
+    
+}
+
+- (NSDate*)egoRefreshTableHeaderDataSourceLastUpdated:(EGORefreshTableHeaderView*)view{
+    
+	return [NSDate date]; // should return date data source was last changed
+    
+}
 
 
 
