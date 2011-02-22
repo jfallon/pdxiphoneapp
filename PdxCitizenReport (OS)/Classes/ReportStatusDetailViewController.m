@@ -94,8 +94,7 @@
 			[controller release];
 			return NO;
 		}
-		
-		if ([globalData stringContains:thisRequestString subString:globalData.getItemPhotoUrlSuffix]==YES) {
+		else if ([globalData stringContains:thisRequestString subString:globalData.getItemPhotoUrlSuffix]==YES) {
 			NSString *address = [NSString stringWithFormat:@"%@%@?input_value_id=%ld&item_id=%ld&device_id=%@",DataRepository.sharedInstance.urlPrefix, DataRepository.sharedInstance.getItemPhotoUrlSuffix, (long)globalData.selectedReport.imageID, (long)globalData.selectedReport.number, globalData.deviceID];
 			NSURL *url = [NSURL URLWithString:address];
 			DisplayImageViewController *controller = [[DisplayImageViewController alloc] initWithURL:url fromNibName:@"DisplayImageView" fromBundle:nil];
@@ -104,7 +103,10 @@
 			[controller release];
 			return NO;
 		}
-		return NO;
+		else {
+			[[UIApplication sharedApplication] openURL:[NSURL URLWithString:thisRequestString]];
+			return NO;
+		}
 	}
 }
 

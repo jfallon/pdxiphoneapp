@@ -74,6 +74,17 @@
 	[[self activityView] stopAnimating];
 }
 
+- (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType {
+    if (navigationType != UIWebViewNavigationTypeLinkClicked)
+        return YES;
+    else
+    {
+        NSString *thisRequestString = [[[request URL] absoluteString] lowercaseString] ;
+        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:thisRequestString]];
+        return NO;
+    }
+}
+             
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
 
 	

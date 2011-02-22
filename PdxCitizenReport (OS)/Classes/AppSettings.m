@@ -25,6 +25,8 @@
 @synthesize helpPageAddress;
 @synthesize usageWarningText;
 @synthesize lastNagForContactInfoDate;
+@synthesize reportStatusFilterString;
+@synthesize categoryFilterString;
 
 - (void)dealloc {
 	[userName release]; userName = nil;
@@ -33,6 +35,8 @@
 	[helpPageAddress release]; helpPageAddress = nil;
 	[usageWarningText release]; usageWarningText = nil;
 	[lastNagForContactInfoDate release]; lastNagForContactInfoDate = nil;
+    [reportStatusFilterString release]; reportStatusFilterString = nil;
+    [categoryFilterString release]; categoryFilterString = nil;
 	[super dealloc];
 }
 

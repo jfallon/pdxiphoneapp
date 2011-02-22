@@ -49,7 +49,13 @@
 			}
 		}
 	}
-	// if the code gets here, data has changed cache and upload it
+	// if the code gets here, data has changed trim, cache and upload it
+    if (nameTextField.text.length > 100)
+        nameTextField.text = [nameTextField.text substringToIndex:100];
+    if (emailAddressTextField.text.length > 100)
+        emailAddressTextField.text = [emailAddressTextField.text substringToIndex:100];
+    if (phoneNumberTextField.text.length > 30)
+        phoneNumberTextField.text = [phoneNumberTextField.text substringToIndex:30];
 	appSettings.userName = nameTextField.text;
 	appSettings.userEmailAddress = emailAddressTextField.text;
 	appSettings.userTelephoneNumber = phoneNumberTextField.text;
@@ -67,6 +73,10 @@
 	// e.g. self.myOutlet = nil;
 }
 
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
+	
+}
+
 // get the keyboard to go away
 -(bool)textFieldShouldReturn:(UITextField *)textField {
 	[textField resignFirstResponder];
@@ -74,30 +84,79 @@
 }
 
 
-#pragma mark limit length of contac inputs to sane values
+#pragma mark limit length of contact inputs to sane values
 
 // limit input within allowable range
 - (bool)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string {
-	NSInteger maxLength;
-	switch (textField.tag) {
-		case 0: // "fullName":
-			maxLength = 100;
-			break;
-		case 1: // "phoneNumber":
-			maxLength = 30;
-			break;
-		case 2: // "emailAddress":
-			maxLength = 100;
-			break;
-		default:
-			break;
-	}
-	if (textField.text.length >= maxLength && range.length == 0) {
-		return NO;
-	}
-	else {
-		return YES;
-	}
+	
+    if (textField == phoneNumberTextField)
+    {
+        // limit the name and email fields to 100 in length
+        if (textField.text.length >= 12 && range.length == 0)
+            return NO;
+        else
+            
+            return YES;
+    }
+    else
+    {
+        // limit the name and email fields to 100 in length
+        if (textField.text.length >= 100 && range.length == 0)
+            return NO;
+        else
+            
+            return YES;    
+    }
+}
+
+- (IBAction)uiTextFieldChangedDueToEdit:(id)sender {
+    
+    if (ignoreUiTextFieldChangedEvent)
+        return;
+    
+    // insert some formatting into the phone number field and remove keyboard when it looks like we have a reasonable pattern
+    if (sender == phoneNumberTextField) {
+        UITextField *textField = (UITextField *)sender;
+        NSString *interimString = textField.text;
+        interimString = [interimString stringByReplacingOccurrencesOfString:@"-" withString:@""];
+        if ([[DataRepository sharedInstance] stringIsUnsignedInt:interimString] == YES)
+        {
+            if (interimString.length > 3)
+            {
+                if (interimString.length > 6) 
+                {
+                    NSString *areaCode = [interimString substringWithRange:NSMakeRange(0,3)];
+                    NSString *prefix = [interimString substringWithRange:NSMakeRange(3,3)];
+                    NSString *suffix = [interimString substringFromIndex:6];
+                    ignoreUiTextFieldChangedEvent = true;
+                    textField.text = [NSString stringWithFormat:@"%@-%@-%@",areaCode,prefix,suffix];
+                    ignoreUiTextFieldChangedEvent = false;
+                    if (textField.text.length == 12)
+                        [textField resignFirstResponder];
+                } 
+                else
+                {
+                    NSString *part1 = [interimString substringWithRange:NSMakeRange(0, 3)];
+                    NSString *part2 = [interimString substringFromIndex:3];
+                    ignoreUiTextFieldChangedEvent = true;
+                    textField.text = [NSString stringWithFormat:@"%@-%@",part1,part2];
+                    ignoreUiTextFieldChangedEvent = false;
+                }
+            }
+            else
+            {
+                ignoreUiTextFieldChangedEvent = true;
+                textField.text = interimString;
+                ignoreUiTextFieldChangedEvent = false;
+            }
+        }
+        else
+        {
+            ignoreUiTextFieldChangedEvent = true;
+            textField.text = interimString;
+            ignoreUiTextFieldChangedEvent = false;
+        }
+    }
 }
 
 #pragma mark send contact info
@@ -152,6 +211,7 @@
 		}
 	}
 }
+
 
 
 

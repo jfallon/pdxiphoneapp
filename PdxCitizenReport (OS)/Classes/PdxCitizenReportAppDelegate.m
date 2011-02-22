@@ -7,6 +7,7 @@
 //
 
 #import "PdxCitizenReportAppDelegate.h"
+#import "AppSettingsViewController.h"
 #import "LocationController.h"
 #import "ASIHTTPRequest.h"
 #import "ASIFormDataRequest.h"
@@ -112,6 +113,95 @@
 	[locationController stop];	
 }
 
+
+#pragma mark -
+#pragma mark UIAlertViewDelegate
+
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
+	
+}
+
+#pragma mark -
+#pragma mark UITabBarControllerDelegate
+
+- (void)tabBarController:(UITabBarController *)tabbarController didSelectViewController:(UIViewController *)viewController {
+
+    
+}
+- (BOOL)tabBarController:(UITabBarController *)tabbarController shouldSelectViewController:(UIViewController *)viewController {
+    
+    // trap leaving the settings tab and check general validity of provided email address
+    if ([tabBarController.selectedViewController isKindOfClass:[AppSettingsViewController class]]) {
+        AppSettingsViewController *appSettingsViewController = (AppSettingsViewController *)tabBarController.selectedViewController;
+        if (appSettingsViewController.emailAddressTextField.text.length > 0) {
+            AppSettings *appSettings = DataRepository.sharedInstance.appSettings;
+            if ([appSettingsViewController.emailAddressTextField.text isEqualToString:appSettings.userEmailAddress] == NO) {
+                if ([[DataRepository sharedInstance] emailAddressIsValid:appSettingsViewController.emailAddressTextField.text] == NO) {
+                    
+                    UIAlertView *alertView = [[UIAlertView alloc] 
+                                              initWithTitle:@"Invalid Email Address"
+                                              message:@"The email address you entered does not appear to be valid, please correct it before continuing" 
+                                              delegate:self 
+                                              cancelButtonTitle:@"OK" 
+                                              otherButtonTitles:nil];
+                    [alertView setTag:1];
+                    [alertView show];
+                    [alertView release];
+                    return NO;
+                }
+            }
+        }
+        NSUInteger phoneNumberLength = appSettingsViewController.phoneNumberTextField.text.length;
+        if (phoneNumberLength != 0) 
+        {
+            bool phoneFormatOK = NO;
+            if (phoneNumberLength == 10 || phoneNumberLength == 12)
+            {
+                if (phoneNumberLength == 10)
+                {
+                    NSRange range = [appSettingsViewController.phoneNumberTextField.text rangeOfString:@"-"];
+                    if (range.location == NSNotFound && [[DataRepository sharedInstance] stringIsUnsignedInt:appSettingsViewController.phoneNumberTextField.text] == YES)
+                        phoneFormatOK = YES;
+                }
+                else
+                {
+                    NSArray *phoneNumberPartsArray = [appSettingsViewController.phoneNumberTextField.text componentsSeparatedByString: @"-"];
+                    if (phoneNumberPartsArray.count == 3) {
+                        NSString *areaCode = [phoneNumberPartsArray objectAtIndex:0];
+                        if (areaCode.length == 3 && [[DataRepository sharedInstance] stringIsUnsignedInt:areaCode] == YES)
+                        {
+                            NSString *prefix = [phoneNumberPartsArray objectAtIndex:1];
+                            if (prefix.length == 3 && [[DataRepository sharedInstance] stringIsUnsignedInt:prefix] == YES)
+                            {
+                                NSString *suffix = [phoneNumberPartsArray objectAtIndex:2];
+                                if (suffix.length == 4 && [[DataRepository sharedInstance] stringIsUnsignedInt:prefix] == YES)
+                                {
+                                    phoneFormatOK = YES;
+                                }                      
+                            }                  
+                        }
+                    }
+                }
+            }
+            if (phoneFormatOK == NO)
+            {
+                UIAlertView *alertView = [[UIAlertView alloc] 
+                                          initWithTitle:@"Invalid Phone Number"
+                                          message:@"The phone number you entered does not appear to be valid, please correct it before continuing" 
+                                          delegate:self 
+                                          cancelButtonTitle:@"OK" 
+                                          otherButtonTitles:nil];
+                [alertView setTag:1];
+                [alertView show];
+                [alertView release];
+                return NO;        
+            }
+        }
+    }
+    return YES;
+}
+
+#pragma mark -
 #pragma mark blacklist request and parsing
 
 - (void)populateDeviceBlackListInfo:(bool)resetRetryCounter {
@@ -200,6 +290,8 @@
 	NSMutableArray *availableReportsArray = [[DataRepository sharedInstance] crmReportDefinitionArray];
 	[availableReportsArray removeAllObjects];
 	
+    AppSettings *appSettings = [[DataRepository sharedInstance] appSettings];
+    
 	NSError **xmlParsingError = nil;
 	DDXMLDocument *xmlDocument = [[DDXMLDocument alloc] initWithXMLString:xmlData options:0 error:xmlParsingError];
 	if (xmlDocument != nil) {
@@ -215,6 +307,7 @@
 		NSString *imageRequiredAttribute = @"iphone_binary_input_required";
 		NSString *addressRequiredAttribute = @"iphone_address_input_required";
 		NSString *commentsRequiredAttribute = @"iphone_text_input_required";
+		NSString *contactInfoRequiredAttribute = @"iphone_contact_required";
 				
 		DDXMLNode *rootNode = [xmlDocument rootElement];
 		NSArray *instanceNodeArray = [rootNode children];
@@ -231,6 +324,19 @@
 			instanceAttribute = [reportElement attributeForName:reportIdAttribute];
 			if (instanceAttribute != nil) {
 				[report setCategory:[[instanceAttribute stringValue] integerValue]];
+                // now set visibility in my reports
+                if (appSettings.categoryFilterString.length == 0) {
+                    report.visibleInMyReports = YES;
+                } 
+                else {
+                    NSRange range = [appSettings.categoryFilterString rangeOfString:[instanceAttribute stringValue]];
+                    if (range.location == NSNotFound) {
+                        report.visibleInMyReports = NO;
+                    }
+                    else {
+                        report.visibleInMyReports = YES;
+                    }
+                }
 			}
 			instanceAttribute = [reportElement attributeForName:reportNameAttribute];
 			if (instanceAttribute != nil) {
@@ -273,6 +379,15 @@
 				}
 				else {
 					[report setCommentsRequired:NO];
+				}
+			}
+			instanceAttribute = [reportElement attributeForName:contactInfoRequiredAttribute];
+			if (instanceAttribute != nil) {
+				if ([[instanceAttribute stringValue] isEqualToString:@"1"]) {
+					[report setContactInfoRequired:YES];
+				}
+				else {
+					[report setContactInfoRequired:NO];
 				}
 			}
 			NSString *thisAddressFieldNamePrefix = nil;
@@ -460,6 +575,8 @@
 		[prefs setInteger:appSettings.usageWarningInterval forKey:@"WarningInterval"];
 		[prefs setInteger:appSettings.usageWarningCounter forKey:@"WarningCounter"];
 		[prefs setObject:appSettings.lastNagForContactInfoDate forKey:@"LastNagForContactInfo"];
+        [prefs setObject:appSettings.reportStatusFilterString forKey:@"ReportStatusFilter"];
+        [prefs setObject:appSettings.categoryFilterString forKey:@"CategoryFilter"];
 		[prefs synchronize];
 	}
 }
@@ -477,8 +594,26 @@
 	appSettings.usageWarningInterval = [prefs integerForKey:@"WarningInterval"];
 	appSettings.usageWarningCounter = [prefs integerForKey:@"WarningCounter"];
 	appSettings.lastNagForContactInfoDate = (NSDate *)[prefs objectForKey:@"LastNagForContactInfo"];
+    appSettings.categoryFilterString = [prefs stringForKey:@"CategoryFilter"];
+    appSettings.reportStatusFilterString = [prefs stringForKey:@"ReportStatusFilter"];
+    // Apply the values in the saved filter string to the statusCodeIsToggledOn array.   
+    // This array is used to dynamically build the filter string
+    if (appSettings.reportStatusFilterString.length > 0)
+    {
+        NSArray *statusCodeKeys = [[DataRepository sharedInstance] statusCodeKeys];
+        NSMutableArray *statusCodeIsToggledOn = [[DataRepository sharedInstance] statusCodeIsToggledOn];
+        for (int i = 0; i < [statusCodeKeys count]; i++)
+        {
+            NSString *aKey = [statusCodeKeys objectAtIndex:i];
+            NSRange range = [appSettings.reportStatusFilterString rangeOfString:aKey];
+            if (range.location == NSNotFound)
+                [statusCodeIsToggledOn replaceObjectAtIndex:i withObject:[NSNumber numberWithBool:NO]];
+            else
+                [statusCodeIsToggledOn replaceObjectAtIndex:i withObject:[NSNumber numberWithBool:YES]];
+            
+        }
+    }
 }
-
 
 - (void)saveUnsentReport {
 	

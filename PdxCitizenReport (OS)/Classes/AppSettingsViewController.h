@@ -9,18 +9,26 @@
 #import <UIKit/UIKit.h>
 @class ASIHTTPRequest;
 
-@interface AppSettingsViewController : UIViewController <UITextFieldDelegate> {
+@interface AppSettingsViewController : UIViewController <UITextFieldDelegate,UIAlertViewDelegate> {
 
 	IBOutlet UITextField *nameTextField;
 	IBOutlet UITextField *emailAddressTextField;
 	IBOutlet UITextField *phoneNumberTextField;
 	NSInteger postContactInfoRetryCount;
+    bool ignoreUiTextFieldChangedEvent;
 }
 
 @property(nonatomic,retain) IBOutlet UITextField *nameTextField;
 @property(nonatomic,retain) IBOutlet UITextField *emailAddressTextField;
 @property(nonatomic,retain) IBOutlet UITextField *phoneNumberTextField;
 
+
+- (IBAction)uiTextFieldChangedDueToEdit:(id)sender;
+
+// UIAlertViewDelegate protocol
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex;
+
+// UITextFieldDelegate protocol
 - (bool)textFieldShouldReturn:(UITextField *)textField;
 - (bool)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string;
 

@@ -580,6 +580,8 @@
 	
 	// get the instance object 
 	DataRepository *globalData = [DataRepository sharedInstance];
+	AppSettings *settings = DataRepository.sharedInstance.appSettings;
+
 	CRMReportDefinition *instance = nil;
 	if (reportTypeIndex == -1) {
 		NSMutableArray *trackItInstanceArray = globalData.crmReportDefinitionArray;
@@ -606,10 +608,10 @@
 	if (globalData.deviceIsBlackListed == YES) {
 		NSString *blackListMessage = nil;
 		if ([[[globalData blackListReason] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] length] != 0) {
-			blackListMessage = [NSString stringWithFormat:@"This iPhone has been blocked from submitting reports, the following reason was recorded: '%@'. If you feel this is in error, please contact the <someone> for assistance.", DataRepository.sharedInstance.blackListReason];
+			blackListMessage = [NSString stringWithFormat:@"This iPhone has been blocked from submitting reports, the following reason was recorded: '%@'. If you feel this is in error, please contact the %@ at %@ for assistance.", DataRepository.sharedInstance.blackListReason, DataRepository.sharedInstance.agencyName, DataRepository.sharedInstance.agencyPhoneNumber];
 		}
 		else {
-			blackListMessage = @"This device has been blocked from submitting reports. If you feel this is in error, please contact <someone> for assistance.";
+			blackListMessage = [NSString stringWithFormat:@"This device has been blocked from submitting reports. If you feel this is in error, please contact the %@ at %@ for assistance.", DataRepository.sharedInstance.agencyName, DataRepository.sharedInstance.agencyPhoneNumber];
 		}
 		UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Blocked Device"
 															message:blackListMessage 
@@ -621,6 +623,17 @@
 		[alertView release];
 		return;
 	}
+	
+	// check for contact info completeness
+	bool contactInfoComplete = YES;
+	if (settings.userName.length == 0) {
+		contactInfoComplete = NO;  // no name, contact info incomplete
+	}
+	else {
+		if ((settings.userEmailAddress.length == 0) && (settings.userTelephoneNumber.length == 0)) {
+			contactInfoComplete = NO;  // there is a name, but email and phone are both blank, contact info incomplete
+		}
+	}	
 	
 	// check we have sufficient data to submit a report
 	NSString *incompleteReportMessage = nil;
@@ -640,8 +653,9 @@
 			NSString *imageRequired = [NSString stringWithFormat:@"%@", (instance.imageRequired ? @"Photo\n" : @"")];
 			NSString *addressRequired = [NSString stringWithFormat:@"%@", (instance.addressRequired ? @"Location\n" : @"")];
 			NSString *commentsRequired = [NSString stringWithFormat:@"%@", (instance.commentsRequired ? @"Comments\n" : @"")];
+			NSString *contactInfoRequired = [NSString stringWithFormat:@"%@", (instance.contactInfoRequired ? @"Contact Info\n" : @"")];
 			
-			incompleteReportMessage = [NSString stringWithFormat:@"%@%@%@%@",messagePrefix,imageRequired,addressRequired,commentsRequired];
+			incompleteReportMessage = [NSString stringWithFormat:@"%@%@%@%@%@",messagePrefix,imageRequired,addressRequired,commentsRequired,contactInfoRequired];
 			if (instance.imageRequired == YES) {
 				if (globalData.unsentReport.image == nil) {
 					reportComplete = NO;
@@ -657,9 +671,13 @@
 					reportComplete = NO;
 				}
 			}
+			if (instance.contactInfoRequired == YES) {
+				if (contactInfoComplete == NO) {
+					reportComplete = NO;
+				}
+			}			
 		}
 	}
-	
 	
 	if (reportComplete == NO) {
 		UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Incomplete Report"
@@ -676,7 +694,7 @@
 	if ([globalData locationIsInCity:globalData.proposedLocation] == NO) {
 		if (instance != nil && instance.addressRequired == YES) {
 			UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Invalid Report Location"
-																message:@"Unable to submit your report, the specified location is outside of <somewhere>." 
+																message:[NSString stringWithFormat:@"Unable to submit your report, the specified location is outside of the %@", globalData.agencyName]
 															   delegate:self 
 													  cancelButtonTitle:@"OK" 
 													  otherButtonTitles:nil];
@@ -689,7 +707,6 @@
 	
 	// determines if nag screen code will run based on the last time it ran
 	bool showNagScreen = YES;  // initally be pesimistic and assume the nag screen code will be run
-	AppSettings *settings = DataRepository.sharedInstance.appSettings;
 	if (settings.lastNagForContactInfoDate != nil) {
 		NSTimeInterval interval = [settings.lastNagForContactInfoDate timeIntervalSinceNow];
 		if (fabs(interval) < 86400) {
@@ -701,14 +718,10 @@
 	// this block determines if a nag screen will be shown based on existance of contact info
 	if (showNagScreen == YES) {
 		showNagScreen = NO; // reset flag and check for sufficient contact info
-		if (settings.userName.length == 0) {
+		if (contactInfoComplete == NO) {
 			showNagScreen = YES;
 		}
-		else {
-			if ((settings.userEmailAddress.length == 0) && (settings.userTelephoneNumber.length == 0)) {
-				showNagScreen = YES;
-			}
-		}
+
 		if (showNagScreen == YES) {
 			settings.lastNagForContactInfoDate = [NSDate date];
 			UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Contact Info?"
@@ -752,7 +765,7 @@
 		[controller release];
 		
 		[[[[[self view] superview] superview] superview] addSubview:self.busyViewController.view];
-		NSString *labelText = [NSString stringWithFormat:@"Please wait, currently uploading your report to the City of Portland..."];
+		NSString *labelText = [NSString stringWithFormat:@"Please wait, currently uploading your report to the %@...", globalData.agencyName];
 		[[self.busyViewController activityIndicatorLabel] setText:labelText];
 		[self.busyViewController startProgressIndicator];
 	}
@@ -790,7 +803,7 @@
 		// edge case: someone created a report but never sent it, later when they try to send it, that report type is no longer supported
 		UIAlertView *alertView = [[UIAlertView alloc] 
 								  initWithTitle:@"Send Report Failed"
-								  message:@"The report type you originally selected for this unsent report is no longer available in PDX Reporter.  Please choose a different report type and submit again." 
+								  message:[NSString stringWithFormat:@"The report type you originally selected for this unsent report is no longer available in %@.  Please choose a different report type and submit again.",globalData.appName]
 								  delegate:self 
 								  cancelButtonTitle:@"OK"
 								  otherButtonTitles:nil];
@@ -804,7 +817,7 @@
 	// now do a fast but blocking network check to verify we can hit the server endpoint, not continuing if this fails
 	if ([self cityWebServerIsReachable]==NO) {
 		UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Unable To Send Report"
-															message:@"<someone>'s webserver is not currently reachable from this iPhone. Please try sending your report later." 
+															message:[NSString stringWithFormat:@"The %@ webserver is not currently reachable from this iPhone. Please try sending your report later.",globalData.agencyName] 
 														   delegate:self 
 												  cancelButtonTitle:@"OK" 
 												  otherButtonTitles:nil];
@@ -1054,7 +1067,7 @@
 		if (reportSubmitalOK == NO) {
 			UIAlertView *alertView = [[UIAlertView alloc] 
 									  initWithTitle:@"Send Report Failed"
-									  message:@"An error with <someone>'s website was encountered while sending your report. Please try sending it again later." 
+									  message:[NSString stringWithFormat:@"An error with the %@ website was encountered while sending your report. Please try sending it again later.", DataRepository.sharedInstance.agencyName] 
 									  delegate:self 
 									  cancelButtonTitle:@"OK"
 									  otherButtonTitles:nil];
@@ -1087,7 +1100,7 @@
 				if (sendReportBackgroundRetryCount == 1) {
 					if ([self cityWebServerIsReachable]==NO) {
 						UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Unable To Send Report"
-																			message:@"<someone>'s webserver is not currently reachable from this iPhone. Please try sending your report again later." 
+																			message:[NSString stringWithFormat:@"The %@ webserver is not currently reachable from this iPhone. Please try sending your report again later.",DataRepository.sharedInstance.agencyName]
 																		   delegate:self 
 																  cancelButtonTitle:@"OK" 
 																  otherButtonTitles:nil];

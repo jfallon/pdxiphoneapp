@@ -32,7 +32,7 @@ static LocationController *sharedInstance;
 }
 
 -(id) init {
-    if (self = [super init]) {
+    if ((self = [super init])) {
 		locationServicesAvailable = NO;
         self.currentLocation = [[CLLocation alloc] init];
         locationManager = [[CLLocationManager alloc] init];
